@@ -13,7 +13,7 @@ export const metadata: Metadata = {
       'Current side-by-side comparisons for 3D configurators and AI car visualizers.',
   },
   alternates: {
-    canonical: '/compare/',
+    canonical: 'https://jnibarger01.github.io/shiftforge/compare/',
   },
 };
 
