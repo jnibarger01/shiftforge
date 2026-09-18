@@ -5,6 +5,13 @@ import { ArrowRight, Heart, MessageCircle } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Community Builds',
   description: 'Browse seeded ShiftForge build journals and tuning concepts.',
+  alternates: {
+    canonical: 'https://jnibarger01.github.io/shiftforge/community/',
+  },
+  openGraph: {
+    title: 'Community Builds | ShiftForge',
+    description: 'Browse automotive build concepts and tuning journals.',
+  },
 };
 
 const builds = [

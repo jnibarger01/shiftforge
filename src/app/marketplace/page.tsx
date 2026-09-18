@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   title: 'Concept Parts Marketplace',
   description:
     'Browse realistic sample wheels, aero, suspension, exhaust and interior concepts for ShiftForge builds.',
+  alternates: {
+    canonical: 'https://jnibarger01.github.io/shiftforge/marketplace/',
+  },
+  openGraph: {
+    title: 'Concept Parts Marketplace | ShiftForge',
+    description:
+      'Browse sample aftermarket concepts, then visualize the direction in the live 3D studio.',
+  },
 };
 
 const products = [
