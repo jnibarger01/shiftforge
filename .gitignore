@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local database + uploads
+/data
+/test-results
+/playwright-report
+
+# third-party car models (licensed for local use only; rebuild with scripts/bake-car-models.py)
+/public/models/cars/
+
+# locally supplied 3D models (personal use, not redistributed)
+/public/models

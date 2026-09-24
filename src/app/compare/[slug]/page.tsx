@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { ArrowRight, Check, ExternalLink, Minus, X } from 'lucide-react';
 import { comparisons, getComparison } from '@/lib/comparisons';
 
+const SITE = process.env.SITE_URL ?? 'http://localhost:3000';
+
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
@@ -27,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     alternates: {
-      canonical: 'https://jnibarger01.github.io/shiftforge/compare/' + slug + '/',
+      canonical: SITE + '/compare/' + slug,
     },
     openGraph: {
       type: 'article',
@@ -70,7 +72,7 @@ export default async function ComparisonPage({ params }: PageProps) {
       price: '0',
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
-      url: 'https://jnibarger01.github.io/shiftforge/studio/',
+      url: SITE + '/garage',
       description: 'Realtime 3D studio access',
     },
   };
@@ -96,19 +98,19 @@ export default async function ComparisonPage({ params }: PageProps) {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://jnibarger01.github.io/shiftforge/',
+        item: SITE + '/',
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: 'Compare',
-        item: 'https://jnibarger01.github.io/shiftforge/compare/',
+        item: SITE + '/compare/',
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: title,
-        item: 'https://jnibarger01.github.io/shiftforge/compare/' + slug + '/',
+        item: SITE + '/compare/' + slug,
       },
     ],
   };
@@ -141,7 +143,7 @@ export default async function ComparisonPage({ params }: PageProps) {
         <h1>ShiftForge vs {comparison.name}</h1>
         <p>{comparison.intro}</p>
         <div className="compare-hero-actions">
-          <Link className="btn btn-primary btn-large" href="/studio">
+          <Link className="btn btn-primary btn-large" href="/garage">
             Try ShiftForge <ArrowRight size={17} />
           </Link>
           <a
@@ -212,7 +214,7 @@ export default async function ComparisonPage({ params }: PageProps) {
             body proportion, wheel style, diameter, ride height, color and aero,
             with AI used only after the live 3D direction is settled.
           </p>
-          <Link className="text-link" href="/studio">Open the 3D studio <ArrowRight size={16} /></Link>
+          <Link className="text-link" href="/garage">Open the 3D studio <ArrowRight size={16} /></Link>
         </article>
         <article className="verdict-card">
           <span className="eyebrow">CHOOSE {comparison.name.toUpperCase()} WHEN</span>
@@ -274,7 +276,7 @@ export default async function ComparisonPage({ params }: PageProps) {
         <h2>Build one car before deciding.</h2>
         <p>The live 3D studio needs no account. Save locally, then use AI only if the concept needs a photoreal pass.</p>
         <div className="render-actions">
-          <Link className="btn btn-primary btn-large" href="/studio">Start a build <ArrowRight size={18} /></Link>
+          <Link className="btn btn-primary btn-large" href="/garage">Start a build <ArrowRight size={18} /></Link>
           <Link className="btn btn-secondary btn-large" href="/signin">Sign in for cloud saves</Link>
         </div>
       </section>

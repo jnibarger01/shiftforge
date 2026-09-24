@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { comparisons } from '@/lib/comparisons';
 
+const SITE = process.env.SITE_URL ?? 'http://localhost:3000';
+
 export const metadata: Metadata = {
   title: 'Best Car Customization Tools & Alternatives in 2026',
   description:
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
       'Current side-by-side comparisons for 3D configurators and AI car visualizers.',
   },
   alternates: {
-    canonical: 'https://jnibarger01.github.io/shiftforge/compare/',
+    canonical: SITE + '/compare/',
   },
 };
 
@@ -73,7 +75,7 @@ export default function ComparePage() {
           <strong>Want to evaluate the workflow instead of reading about it?</strong>
           <p>Open the live 3D studio, change a build, save it, then decide whether the optional AI step adds anything useful.</p>
         </div>
-        <Link className="btn btn-primary" href="/studio">Try ShiftForge <ArrowRight size={16} /></Link>
+        <Link className="btn btn-primary" href="/garage">Try ShiftForge <ArrowRight size={16} /></Link>
       </section>
     </main>
   );

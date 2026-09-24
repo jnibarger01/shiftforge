@@ -1,0 +1,10 @@
+{
+  "toyota-gr-supra-a90": { "src": "~/Downloads/toyota_gr_supra.glb", "lengthMm": 4379 },
+  "toyota-supra-mk4": { "src": "~/Downloads/toyota_supra.glb", "lengthMm": 4515 },
+  "toyota-gr-corolla": { "src": "~/Downloads/2023_toyota_gr_corolla.glb", "lengthMm": 4410 },
+  "toyota-gt86-zn6": { "src": "~/Downloads/toyota_gt86_3d_model_free.glb", "lengthMm": 4240 },
+  "toyota-4runner-n280": { "src": "~/projects/toyota-showroom/public/models/modsnation_7416_assets_assembled.glb", "lengthMm": 4830 },
+  "toyota-rav4-hybrid-xa50": { "src": "~/Downloads/2023_toyota_rav4_hybrid.glb", "lengthMm": 4600 },
+  "toyota-camry-xv80": { "src": "~/Downloads/2025_toyota_camry_xv80_hybrid.glb", "lengthMm": 4920 },
+  "toyota-land-cruiser-250": { "src": "~/Downloads/2025_toyota_land_cruiser_250.glb", "lengthMm": 4925 }
+}

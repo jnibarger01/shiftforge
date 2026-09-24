@@ -1,45 +1,41 @@
+'use client';
+
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
-import { comparisons } from '@/lib/comparisons';
+import { usePathname } from 'next/navigation';
+
+const LINKS = [
+  ['About Us', '/about'],
+  ['3D Mods Lab', '/garage'],
+  ['Fitment Search', '/fitment'],
+  ['Marketplace', '/marketplace'],
+  ['Events Map', '/map'],
+  ['Comparisons', '/compare'],
+  ['Community Guidelines', '/about#guidelines'],
+  ['Privacy', '/about#privacy'],
+  ['Terms of Sale', '/about#terms'],
+] as const;
 
 export default function Footer() {
+  const pathname = usePathname();
+  // The Lab is a full-viewport app; no footer under it.
+  if (/^\/garage\/[^/]+/.test(pathname)) return null;
   return (
     <footer className="site-footer">
-      <div className="footer-top">
-        <div>
-          <div className="brand footer-brand">
-            <span className="brand-mark">S</span>
-            <span>SHIFT<span>FORGE</span></span>
-          </div>
-          <p>
-            Visualize the build before you buy the parts. Realtime 3D first,
-            photoreal AI when you need the final concept.
-          </p>
-        </div>
-        <div className="footer-links">
-          <div>
-            <strong>Product</strong>
-            <Link href="/studio">3D Studio</Link>
-            <Link href="/garage">Garage</Link>
-            <Link href="/marketplace">Marketplace</Link>
-            <Link href="/community">Community</Link>
-          </div>
-          <div>
-            <strong>Compare</strong>
-            {comparisons.slice(0, 4).map((item) => (
-              <Link href={'/compare/' + item.slug} key={item.slug}>
-                vs {item.name}
-              </Link>
-            ))}
-            <Link href="/compare">All comparisons <ArrowUpRight size={13} /></Link>
-          </div>
-        </div>
-      </div>
-      <div className="footer-bottom">
-        <span>© 2026 ShiftForge. Independent concept project.</span>
-        <span>
-          Visual concepts only — not fitment, safety, legal or engineering advice.
-        </span>
+      <div className="container">
+        <p>
+          ShiftForge is an independent platform and is not sponsored by, associated with, or endorsed by any automobile or parts manufacturer. Makes, models and brand names are
+          used only to identify vehicles and parts; all trademarks belong to their owners. Fitment readouts are planning estimates — measure your own car before buying parts.
+          Marketplace listings and prices are demonstration data.
+        </p>
+        <nav className="footer-links" aria-label="Footer">
+          {LINKS.map(([label, href], i) => (
+            <span key={href} style={{ display: 'contents' }}>
+              {i > 0 && <span aria-hidden>•</span>}
+              <Link href={href}>{label}</Link>
+            </span>
+          ))}
+        </nav>
+        <div>© 2026 ShiftForge. All rights reserved.</div>
       </div>
     </footer>
   );

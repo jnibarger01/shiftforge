@@ -1,22 +1,13 @@
 import type { Metadata } from 'next';
-import AccountPanel from '@/components/AccountPanel';
+import { Suspense } from 'react';
+import AuthForm from '@/components/auth/AuthForm';
 
-export const metadata: Metadata = {
-  title: 'Sign in',
-  description: 'Connect an optional Puter account for cloud build copies and AI generation.',
-  alternates: {
-    canonical: 'https://jnibarger01.github.io/shiftforge/signin/',
-  },
-  robots: {
-    index: false,
-    follow: true,
-  },
-};
+export const metadata: Metadata = { title: 'Sign in', robots: { index: false } };
 
-export default function SignInPage() {
+export default function Page() {
   return (
-    <main className="page-shell account-page">
-      <AccountPanel />
-    </main>
+    <Suspense>
+      <AuthForm mode="signin" />
+    </Suspense>
   );
 }

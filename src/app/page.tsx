@@ -1,183 +1,270 @@
 import Link from 'next/link';
-import {
-  ArrowRight,
-  Boxes,
-  Camera,
-  Check,
-  Gauge,
-  Layers3,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react';
-import { comparisons } from '@/lib/comparisons';
+import { getCurrentUser } from '@/lib/auth';
+import { buildStandings, listOwnerBuilds, recentActivity, viewerState } from '@/lib/community';
+import { getBuild, listBuilds } from '@/lib/builds';
+import { getModel, listParts, partsByIds } from '@/lib/catalog';
+import { listArticles, listAuctions, listEvents } from '@/lib/content';
+import { getDb } from '@/lib/db';
+import { fmtDate, money, timeAgo } from '@/lib/format';
+import Avatar from '@/components/ui/Avatar';
+import { BuildCard, OwnerCard } from '@/components/ui/Cards';
+import { VoteButton } from '@/components/ui/Toggles';
+import ArticleCard from '@/components/articles/ArticleCard';
+import PartsGrid from '@/components/market/PartsGrid';
+import HeroViewer from '@/components/home/HeroViewer';
 
-const featuredParts = [
-  ['R-19 Mesh GT', 'Wheel concept', '$420 / wheel', '19 × 9.5'],
-  ['Streetline V2', 'Aero package', '$1,850', 'splitter + skirts'],
-  ['Coil-4', 'Suspension concept', '$1,290', '32-way adjustable'],
-];
+export default async function Home({ searchParams }: { searchParams: Promise<{ club?: string }> }) {
+  const { club } = await searchParams;
+  const women = club === 'women';
+  const user = await getCurrentUser();
+  const spotlight = listOwnerBuilds({ sort: 'trending', women, limit: 2 }).items;
+  const justAdded = listOwnerBuilds({ sort: 'new', women, limit: 8 }).items;
+  const board = buildStandings(6);
+  const heroBuild = board[0] ? getBuild(board[0].id) : null;
+  const heroParts = heroBuild ? partsByIds([heroBuild.config.wheelPartId]) : new Map();
+  const aeroSlugs = heroBuild ? (Object.values(heroBuild.config.aero).filter(Boolean) as string[]) : [];
+  const aeroRows = aeroSlugs.length ? (getDb().prepare(`SELECT slug, specs FROM parts WHERE slug IN (${aeroSlugs.map(() => '?').join(',')})`).all(...aeroSlugs) as { slug: string; specs: string }[]) : [];
+  const heroAero = heroBuild ? Object.fromEntries(Object.entries(heroBuild.config.aero).map(([k, v]) => [k, v ? (JSON.parse(aeroRows.find((r) => r.slug === v)?.specs ?? '{}').shape ?? null) : null])) : {};
+  const journals = listArticles({ kind: 'journal', limit: 2 });
+  const magazine = listArticles({ kind: 'magazine', sort: 'popular', limit: 3 });
+  const activity = recentActivity(8);
+  const events = listEvents().slice(0, 4);
+  const auctions = listAuctions().slice(0, 4);
+  const wheels = listParts({ category: 'wheels' }).slice(0, 4);
+  const ownerState = viewerState(user?.id, 'owner', [...spotlight, ...justAdded].map((o) => o.id));
+  const buildState = viewerState(user?.id, 'build', board.map((b) => b.id));
+  const takeModel = spotlight[0]?.modelId ? getModel(spotlight[0].modelId) : null;
+  const newest = listBuilds({ sort: 'new', limit: 4 }).items;
 
-export default function Home() {
+  const clubHead = (title: string) => (
+    <div className="section-head">
+      <h2 style={{ fontSize: 17 }}>{title}</h2>
+      <div className="tabs" role="tablist">
+        <Link href="/" className={`tab${!women ? ' active' : ''}`} role="tab" aria-selected={!women} scroll={false}>
+          Spotlight
+        </Link>
+        <Link href="/?club=women" className={`tab${women ? ' active' : ''}`} role="tab" aria-selected={women} scroll={false}>
+          What Women Builders Drive
+        </Link>
+      </div>
+      <span className="spacer" />
+      <Link href="/owners-builds/new" className="btn btn-primary">
+        + Add your ride
+      </Link>
+      <Link href={`/community-builds${women ? '?women=1' : ''}`} className="link-accent">
+        Explore All
+      </Link>
+    </div>
+  );
+
   return (
-    <main>
-      <section className="hero">
-        <div className="hero-copy">
-          <span className="eyebrow accent">REALTIME 3D · OPTIONAL AI</span>
-          <h1>Build it before<br />you buy it.</h1>
-          <p>
-            Tune paint, wheels, stance and aero in a live 3D studio. When the
-            spec is right, turn that exact viewport into a photoreal AI concept.
-          </p>
-          <div className="hero-actions">
-            <Link className="btn btn-primary btn-large" href="/studio">
-              Open 3D Studio <ArrowRight size={18} />
-            </Link>
-            <Link className="btn btn-secondary btn-large" href="/compare">
-              Compare tools
-            </Link>
-          </div>
-          <div className="hero-proof">
-            <span><Check size={15} /> No login for 3D</span>
-            <span><Check size={15} /> Saves on device</span>
-            <span><Check size={15} /> Real AI generation</span>
-          </div>
+    <div className="container page">
+      <h1 className="sr-only">ShiftForge — 3D car configurator, wheel fitment and tuning community</h1>
+      <section className="section">
+        {clubHead("Owner's Club")}
+        <div className="home-hero-row">
+          {spotlight.map((o) => (
+            <OwnerCard key={o.id} o={o} liked={ownerState.liked.has(o.id)} tall />
+          ))}
         </div>
+        {takeModel && (
+          <Link href={`/garage/${takeModel.slug}`} className="take-card" style={{ marginTop: 14 }}>
+            <span>Your take on it</span>
+            <strong>
+              Build this {takeModel.model} {takeModel.generation} in 3D
+            </strong>
+            <span>Model is ready in the configurator</span>
+          </Link>
+        )}
+      </section>
 
-        <div className="hero-visual" aria-label="ShiftForge concept car">
-          <div className="hero-grid" />
-          <div className="concept-car">
-            <span className="car-cabin" />
-            <span className="car-body" />
-            <span className="car-wheel front" />
-            <span className="car-wheel rear" />
-            <span className="car-light" />
+      {heroBuild && (
+        <section className="section lab-cta" aria-label="3D Mods Lab">
+          <div className="lab-cta-copy">
+            <span className="kicker">3D Mods Lab</span>
+            <h1 style={{ fontSize: 'clamp(28px, 3.4vw, 46px)' }}>Try the wheels before you buy them.</h1>
+            <p>
+              Pick your car, drop in real wheel sizes and offsets, set the stance, and see the fitment verdict before a single part ships. Then publish it and let the
+              community vote.
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <Link className="btn btn-primary btn-lg" href="/garage">
+                + Build in 3D
+              </Link>
+              <Link className="btn btn-outline btn-lg" href={heroBuild.href}>
+                #1 this week: {heroBuild.title}
+              </Link>
+            </div>
           </div>
-          <div className="hud hud-top">
-            <span>APEX S2</span><strong>BUILD 001</strong>
-          </div>
-          <div className="hud hud-bottom">
-            <span>19″ MESH</span><span>-28 MM</span><span>PORCELAIN</span>
-          </div>
+          <HeroViewer model={heroBuild.carModel} config={heroBuild.config} wheelStyle={(heroBuild.config.wheelPartId && heroParts.get(heroBuild.config.wheelPartId)?.style) || 'five-spoke'} aero={heroAero} title={heroBuild.title} />
+        </section>
+      )}
+
+      <section className="section">
+        <div className="section-head">
+          <h2>3D Builds: this week&apos;s board</h2>
+          <span className="spacer" />
+          <Link href="/ratings" className="link-accent">
+            Full board →
+          </Link>
+        </div>
+        <div className="grid">
+          {board.slice(0, 4).map((b, i) => (
+            <BuildCard key={b.id} b={b} rank={i + 1} liked={buildState.liked.has(b.id)} voted={buildState.voted.has(b.id)} showVote />
+          ))}
         </div>
       </section>
 
-      <section className="metric-strip">
-        <div><strong>&lt; 1 sec</strong><span>3D changes</span></div>
-        <div><strong>3</strong><span>original platforms</span></div>
-        <div><strong>0</strong><span>required subscriptions</span></div>
-        <div><strong>1 flow</strong><span>3D → AI concept</span></div>
-      </section>
-
-      <section className="content-section">
-        <div className="section-heading">
-          <span className="eyebrow">THE CORE LOOP</span>
-          <h2>Experiment fast. Render only when it matters.</h2>
-          <p>
-            The expensive part of a build should not be finding out the idea
-            looked better in your head.
-          </p>
-        </div>
-        <div className="feature-grid">
-          <article className="feature-card">
-            <span className="feature-number">01</span>
-            <Layers3 size={25} />
-            <h3>Configure live</h3>
-            <p>Switch platforms, paint finishes, wheel styles, diameter, stance and aero with instant feedback.</p>
-          </article>
-          <article className="feature-card">
-            <span className="feature-number">02</span>
-            <Gauge size={25} />
-            <h3>Inspect from every angle</h3>
-            <p>Orbit and zoom the actual 3D scene. Save variants locally before choosing a direction.</p>
-          </article>
-          <article className="feature-card">
-            <span className="feature-number">03</span>
-            <Sparkles size={25} />
-            <h3>Photorealize the winner</h3>
-            <p>Send the configured viewport into a real image model to produce an editorial concept render.</p>
-          </article>
+      <section className="section">
+        {clubHead('Just added')}
+        <div className="row-scroll">
+          {justAdded.map((o) => (
+            <OwnerCard key={o.id} o={o} liked={ownerState.liked.has(o.id)} />
+          ))}
         </div>
       </section>
 
-      <section className="dark-band">
-        <div className="band-copy">
-          <span className="eyebrow accent">THE STUDIO</span>
-          <h2>A tuning desk, not a prompt box.</h2>
-          <p>
-            The 3D state is the source of truth. AI is the final visualization
-            layer, not a random image generator pretending to be a configurator.
-          </p>
-          <Link className="text-link" href="/studio">Launch the studio <ArrowRight size={16} /></Link>
-        </div>
-        <div className="band-specs">
-          <div><Boxes size={20} /><span>Body</span><strong>3 platforms</strong></div>
-          <div><Gauge size={20} /><span>Stance</span><strong>0–70 range</strong></div>
-          <div><Camera size={20} /><span>Scenes</span><strong>3 environments</strong></div>
-          <div><Sparkles size={20} /><span>AI</span><strong>GPT Image via Puter</strong></div>
-        </div>
-      </section>
-
-      <section className="content-section">
-        <div className="section-heading split-heading">
+      <section className="section">
+        <div className="section-head">
           <div>
-            <span className="eyebrow">SAMPLE CATALOG</span>
-            <h2>Build around plausible parts.</h2>
+            <h2>New episodes</h2>
+            <p className="section-sub">Fresh chapters from builds in progress</p>
           </div>
-          <p>
-            Seeded concept data keeps the marketplace useful without pretending
-            these are verified fitment listings.
-          </p>
+          <span className="spacer" />
+          <Link href="/journal" className="link-accent">
+            All journals →
+          </Link>
         </div>
-        <div className="product-grid">
-          {featuredParts.map(([name, type, price, spec], index) => (
-            <article className="product-card" key={name}>
-              <div className={'product-art art-' + (index + 1)}>
-                <span>{type}</span>
-              </div>
-              <div className="product-meta">
-                <span className="eyebrow">{type}</span>
-                <h3>{name}</h3>
-                <div><strong>{price}</strong><span>{spec}</span></div>
-              </div>
-            </article>
-          ))}
-        </div>
-        <div className="center-cta">
-          <Link className="btn btn-secondary" href="/marketplace">Browse sample marketplace</Link>
-        </div>
-      </section>
-
-      <section className="compare-teaser">
-        <div>
-          <span className="eyebrow accent">BUYER’S GUIDE</span>
-          <h2>Not every car visualizer does the same job.</h2>
-          <p>
-            We compared ShiftForge with realtime 3D configurators and photo-first AI
-            tools using current product information checked September 17, 2026.
-          </p>
-          <Link className="btn btn-primary" href="/compare">Open comparison hub</Link>
-        </div>
-        <div className="compare-link-grid">
-          {comparisons.map((item) => (
-            <Link href={'/compare/' + item.slug} key={item.slug}>
-              <span>ShiftForge vs</span>
-              <strong>{item.name}</strong>
-              <ArrowRight size={17} />
-            </Link>
+        <div className="grid-2">
+          {journals.map((a) => (
+            <ArticleCard key={a.id} a={a} />
           ))}
         </div>
       </section>
 
-      <section className="trust-strip">
-        <ShieldCheck size={24} />
-        <div>
-          <strong>Concept visualization only.</strong>
-          <span>
-            Always verify real dimensions, clearances, load ratings, legality
-            and manufacturer fitment data before buying or installing parts.
+      <section className="section" aria-label="Happening now">
+        <div className="section-head">
+          <span className="kicker">
+            Happening now <span className="live-dot" aria-hidden /> live
           </span>
         </div>
+        <div className="live-strip">
+          {activity.map((a, i) => (
+            <Link key={i} href={a.href} className="live-item">
+              <Avatar name={a.who.name} color={a.who.color} size={36} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <b>
+                  {a.who.name} {a.text}
+                </b>
+                <small>
+                  {a.title} · {timeAgo(a.at)}
+                </small>
+              </div>
+              <span className={`badge ${a.kind === 'AI' ? 'badge-ai' : a.kind === '3D' ? 'badge-3d' : ''}`}>{a.kind}</span>
+            </Link>
+          ))}
+        </div>
       </section>
-    </main>
+
+      <section className="section">
+        <div className="section-head">
+          <h2>Local Events and People Near You</h2>
+          <span className="spacer" />
+          <Link href="/map" className="link-accent">
+            Explore All
+          </Link>
+        </div>
+        <div className="grid">
+          {events.map((e) => (
+            <Link key={e.id} href={`/events/${e.id}`} className="panel" style={{ display: 'flex', gap: 12 }}>
+              <span className="date-badge">
+                <b>{fmtDate(e.startsAt, { day: 'numeric' })}</b>
+                <small>{fmtDate(e.startsAt, { month: 'short' })}</small>
+              </span>
+              <span style={{ display: 'grid', gap: 3 }}>
+                <b>{e.title}</b>
+                <small className="muted">
+                  {e.city}, {e.state} · {e.category}
+                </small>
+                <small className="muted">📍 {e.venue}</small>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-head">
+          <h2>Magazine: Popular Today</h2>
+          <span className="spacer" />
+          <Link href="/magazine" className="link-accent">
+            Explore All
+          </Link>
+        </div>
+        <div className="grid">
+          {magazine.map((a) => (
+            <ArticleCard key={a.id} a={a} />
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-head">
+          <h2>Fresh from the Lab</h2>
+          <span className="spacer" />
+          <Link href="/builds?sort=new" className="link-accent">
+            Explore All
+          </Link>
+        </div>
+        <div className="grid">
+          {newest.map((b) => (
+            <BuildCard key={b.id} b={b} />
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-head">
+          <h2>Project Cars: Auctions</h2>
+          <span className="spacer" />
+          <Link href="/auctions" className="link-accent">
+            Explore All
+          </Link>
+        </div>
+        <div className="grid">
+          {auctions.map((a) => (
+            <Link key={a.id} href="/auctions" className="panel" style={{ display: 'grid', gap: 4, background: `linear-gradient(160deg, ${a.paint}33, var(--card) 60%)` }}>
+              <span className="badge badge-green" style={{ width: 'fit-content' }}>
+                {a.verdict}
+              </span>
+              <b className="mono" style={{ fontSize: 19 }}>~{money(a.estimateCents)} to win</b>
+              <b>
+                {a.year} {a.make} {a.model}
+              </b>
+              <small className="muted">
+                {a.damage} · {Math.round(a.miles / 1000)}K mi · {a.state}
+              </small>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-head">
+          <h2>Aftermarket Wheels</h2>
+          <span className="spacer" />
+          <Link href="/marketplace/wheels" className="link-accent">
+            Explore All
+          </Link>
+        </div>
+        <PartsGrid parts={wheels} />
+      </section>
+      {board[0] && (
+        <div className="notice" style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          Weekly ratings are live — <b style={{ color: 'var(--text)' }}>{board[0].title}</b> leads 3D Builds.
+          <VoteButton target={{ type: 'build', id: board[0].id }} voted={buildState.voted.has(board[0].id)} count={board[0].votes} />
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://jnibarger01.github.io/shiftforge/sitemap.xml
