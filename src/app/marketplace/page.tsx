@@ -1,82 +1,103 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, BadgeCheck, Search } from 'lucide-react';
+import { PART_CATEGORIES, listParts } from '@/lib/catalog';
+import { listAuctions } from '@/lib/content';
+import { money } from '@/lib/format';
+import PartsGrid from '@/components/market/PartsGrid';
 
 export const metadata: Metadata = {
-  title: 'Concept Parts Marketplace',
-  description:
-    'Browse realistic sample wheels, aero, suspension, exhaust and interior concepts for ShiftForge builds.',
-  alternates: {
-    canonical: 'https://jnibarger01.github.io/shiftforge/marketplace/',
-  },
-  openGraph: {
-    title: 'Concept Parts Marketplace | ShiftForge',
-    description:
-      'Browse sample aftermarket concepts, then visualize the direction in the live 3D studio.',
-  },
+  title: 'Marketplace — Wheels, Tires, Suspension & Aero',
+  description: 'Browse aftermarket wheels, tires, coilovers and aero parts. Check fitment on your car in 3D before you buy.',
+  alternates: { canonical: '/marketplace' },
 };
 
-const products = [
-  ['R-19 Mesh GT', 'Wheels', '$420 / wheel', '19×9.5 +22', 'Machined silver'],
-  ['Orbit Mono 5', 'Wheels', '$510 / wheel', '20×10 +28', 'Satin graphite'],
-  ['Streetline V2', 'Aero', '$1,850', '3-piece kit', 'FRP concept'],
-  ['Circuit Wing 71', 'Aero', '$1,240', '71 in', 'Carbon concept'],
-  ['Coil-4 Street', 'Suspension', '$1,290', '32-way', 'Height adjustable'],
-  ['Valveback S3', 'Exhaust', '$1,680', '76 mm', 'Valved cat-back'],
-  ['Six-Pot Road', 'Brakes', '$2,950', '355 mm', 'Forged caliper'],
-  ['Halo Buckets', 'Interior', '$1,390 / pair', 'FIA-style', 'Black cloth'],
-];
-
-export default function MarketplacePage() {
+export default async function MarketplacePage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams;
+  const auctions = listAuctions().slice(0, 4);
+  if (q) {
+    const results = listParts({ q });
+    return (
+      <div className="container page">
+        <SearchHeader q={q} />
+        <p className="muted" style={{ margin: '12px 0' }}>
+          {results.length} result{results.length === 1 ? '' : 's'} for “{q}”
+        </p>
+        {results.length ? (
+          <PartsGrid parts={results} />
+        ) : (
+          <div className="empty">
+            <h3>Nothing matched “{q}”</h3>
+            <p>Try a brand (Enkei, BBS, KW) or a part type (coilovers, splitter).</p>
+            <Link className="btn btn-outline" href="/marketplace">
+              Browse all parts
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
-    <main className="page-shell">
-      <section className="page-hero marketplace-hero">
-        <div>
-          <span className="eyebrow">SAMPLE CATALOG</span>
-          <h1>Parts that make the build feel real.</h1>
-          <p>
-            A seeded concept marketplace for exploring categories and budget.
-            Listings are illustrative, not verified products or fitment claims.
-          </p>
+    <div className="container page">
+      <SearchHeader />
+      {PART_CATEGORIES.map((c) => {
+        const parts = listParts({ category: c.key }).slice(0, 5);
+        return (
+          <section className="section" key={c.key}>
+            <div className="section-head">
+              <h2>{c.label}</h2>
+              <span className="spacer" />
+              <Link className="link-accent" href={`/marketplace/${c.key}`}>
+                Explore All
+              </Link>
+            </div>
+            <PartsGrid parts={parts} />
+          </section>
+        );
+      })}
+      <section className="section">
+        <div className="section-head">
+          <h2>Project Cars: Auctions</h2>
+          <span className="spacer" />
+          <Link className="link-accent" href="/auctions">
+            Explore All
+          </Link>
         </div>
-        <div className="fake-search">
-          <Search size={18} /><span>Search wheels, aero, suspension…</span>
+        <div className="grid">
+          {auctions.map((a) => (
+            <Link key={a.id} href="/auctions" className="panel" style={{ display: 'grid', gap: 4 }}>
+              <span className="badge badge-green" style={{ width: 'fit-content' }}>{a.verdict}</span>
+              <b className="mono" style={{ fontSize: 18 }}>~{money(a.estimateCents)} to win</b>
+              <b>
+                {a.year} {a.make} {a.model}
+              </b>
+              <span className="muted" style={{ fontSize: 13 }}>
+                {a.damage} · {Math.round(a.miles / 1000)}K mi · {a.state}
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
+    </div>
+  );
+}
 
-      <div className="filter-row">
-        {['All', 'Wheels', 'Aero', 'Suspension', 'Exhaust', 'Brakes', 'Interior'].map((item, index) => (
-          <span className={index === 0 ? 'filter-pill active' : 'filter-pill'} key={item}>{item}</span>
-        ))}
+function SearchHeader({ q }: { q?: string }) {
+  return (
+    <div className="section-head">
+      <div>
+        <h1 className="page-title">
+          Marketplace<span className="accent">.</span>
+        </h1>
+        <p className="section-sub">Wheels, kits & aftermarket parts — try them on your car in 3D first.</p>
       </div>
-
-      <section className="market-grid">
-        {products.map(([name, category, price, size, finish], index) => (
-          <article className="market-card" key={name}>
-            <div className={'market-art market-art-' + ((index % 4) + 1)}>
-              <span>{category}</span>
-              <strong>{index < 2 ? '◉' : index < 4 ? '▰' : '⚙'}</strong>
-            </div>
-            <div className="market-copy">
-              <span className="eyebrow">{category}</span>
-              <h2>{name}</h2>
-              <p>{size} · {finish}</p>
-              <div className="price-line">
-                <strong>{price}</strong>
-                <span><BadgeCheck size={14} /> sample listing</span>
-              </div>
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <div className="notice-card">
-        <div>
-          <strong>See something worth trying?</strong>
-          <p>Use the studio to explore the visual direction before sourcing a real verified part.</p>
-        </div>
-        <Link className="btn btn-primary" href="/studio">Open studio <ArrowRight size={16} /></Link>
-      </div>
-    </main>
+      <span className="spacer" />
+      <form action="/marketplace" role="search" style={{ display: 'flex', gap: 8, flex: '1 1 320px', maxWidth: 480 }}>
+        <label className="sr-only" htmlFor="part-q">
+          Search parts
+        </label>
+        <input id="part-q" name="q" className="input" defaultValue={q} placeholder="Search brands and parts…" />
+        <button className="btn btn-primary">Search</button>
+      </form>
+    </div>
   );
 }
